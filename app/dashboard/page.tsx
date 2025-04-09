@@ -16,6 +16,7 @@ import { getJobs, getUserApplications, getUserSkills, getJobsBySkills } from "@/
 import type { Job } from "@/types/job"
 import type { Application } from "@/types/application"
 import type { Skill } from "@/types/skill"
+import { ResumeSection } from "@/components/dashboard/resume-section"
 
 function DashboardContent() {
   const { user, isLoading } = useAuth()
@@ -206,20 +207,11 @@ function DashboardContent() {
                           <p className="text-muted-foreground">No skills added yet</p>
                         )}
                       </div>
-                      <div>
-                        <h3 className="font-medium">Resume</h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Button variant="outline" size="sm" onClick={() => router.push("/profile/resume")}>
-                            Upload Resume
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => router.push("/profile/linkedin")}>
-                            Connect LinkedIn
-                          </Button>
-                        </div>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
+
+                {user && <ResumeSection userId={user.id} />}
               </TabsContent>
             </Tabs>
           </div>
