@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
 import { useVoice } from "@/context/voice-context"
@@ -17,15 +17,15 @@ import type { Job } from "@/types/job"
 import type { Application } from "@/types/application"
 import type { Skill } from "@/types/skill"
 
-export default function Dashboard() {
+function DashboardContent() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const defaultTab = searchParams.get("tab") || "jobs"
-  const [activeTab, setActiveTab] = useState(defaultTab)
   const { speak } = useVoice()
   const { toast } = useToast()
   const [hasWelcomed, setHasWelcomed] = useState(false)
+  const [activeTab, setActiveTab] = useState(defaultTab)
   const [jobs, setJobs] = useState<Job[]>([])
   const [applications, setApplications] = useState<Application[]>([])
   const [userSkills, setUserSkills] = useState<Skill[]>([])
@@ -230,5 +230,13 @@ export default function Dashboard() {
         </div>
       </div>
     </DashboardLayout>
+  )
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   )
 }
