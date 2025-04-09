@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
 import { useVoice } from "@/context/voice-context"
 import DashboardLayout from "@/components/dashboard/dashboard-layout"
@@ -20,10 +20,12 @@ import type { Skill } from "@/types/skill"
 export default function Dashboard() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const defaultTab = searchParams.get("tab") || "jobs"
+  const [activeTab, setActiveTab] = useState(defaultTab)
   const { speak } = useVoice()
   const { toast } = useToast()
   const [hasWelcomed, setHasWelcomed] = useState(false)
-  const [activeTab, setActiveTab] = useState("jobs")
   const [jobs, setJobs] = useState<Job[]>([])
   const [applications, setApplications] = useState<Application[]>([])
   const [userSkills, setUserSkills] = useState<Skill[]>([])
@@ -175,16 +177,16 @@ export default function Dashboard() {
                     <div className="space-y-4">
                       <div>
                         <h3 className="font-medium">Name</h3>
-                        <p>{user.profile?.full_name || "Not set"}</p>
+                        <p>{user?.profile?.full_name || "Not set"}</p>
                       </div>
                       <div>
                         <h3 className="font-medium">Email</h3>
-                        <p>{user.email}</p>
+                        <p>{user?.email || "Not set"}</p>
                       </div>
-                      {user.profile?.location && (
+                      {user?.profile?.location && (
                         <div>
                           <h3 className="font-medium">Location</h3>
-                          <p>{user.profile.location}</p>
+                          <p>{user?.profile?.location}</p>
                         </div>
                       )}
                       <div>

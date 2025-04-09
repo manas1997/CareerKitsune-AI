@@ -50,7 +50,7 @@ export default function SettingsPage() {
         const { data, error } = await supabase
           .from("profiles")
           .select("*")
-          .eq("id", user.id)
+          .eq("auth_users_id", user.id)
           .single()
 
         if (error) throw error
@@ -94,7 +94,7 @@ export default function SettingsPage() {
           bio: profile.bio,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", user.id)
+        .eq("auth_users_id", user.id)
 
       if (error) throw error
 
@@ -122,7 +122,7 @@ export default function SettingsPage() {
           notification_settings: notifications,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", user.id)
+        .eq("auth_users_id", user.id)
 
       if (error) throw error
 
