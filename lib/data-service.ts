@@ -4,72 +4,162 @@ import type { Profile } from "@/types/profile"
 
 // Auth functions
 export async function signUp(email: string, password: string, fullName: string) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-      },
-    },
-  })
-
-  if (error) throw error
-
-  if (data.user) {
-    // Create a profile for the new user
-    await createProfile({
-      id: data.user.id,
+  try {
+    const { data, error } = await supabase.auth.signUp({
       email,
-      full_name: fullName,
-      auth_users_id: data.user.id,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
     })
-  }
 
-  return data
+    if (error) {
+      console.error("Error signing up:", error)
+      throw error
+    }
+
+    if (data.user) {
+      // Create a profile for the new user
+      await createProfile({
+        id: data.user.id,
+        email,
+        full_name: fullName,
+        auth_users_id: data.user.id,
+      })
+    }
+
+    return data
+  } catch (error) {
+    console.error("Failed to sign up:", error)
+    throw error
+  }
 }
 
 export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-  if (error) throw error
-  return data
+    if (error) {
+      console.error("Error signing in:", error)
+      throw error
+    }
+
+    if (data.user) {
+      // Ensure profile exists
+      await getProfile(data.user.id)
+    }
+
+    return data
+  } catch (error) {
+    console.error("Failed to sign in:", error)
+    throw error
+  }
 }
 
 export async function signOut() {
-  const { error } = await supabase.auth.signOut()
-  if (error) throw error
+  try {
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      console.error("Error signing out:", error)
+      throw error
+    }
+  } catch (error) {
+    console.error("Failed to sign out:", error)
+    throw error
+  }
 }
 
 export async function getCurrentUser() {
-  const { data, error } = await supabase.auth.getUser()
-  if (error) throw error
-  return data.user
+  try {
+    const { data, error } = await supabase.auth.getUser()
+    if (error) {
+      console.error("Error getting current user:", error)
+      throw error
+    }
+    return data.user
+  } catch (error) {
+    console.error("Failed to get current user:", error)
+    throw error
+  }
 }
 
 // Profile functions
 export async function createProfile(profile: Partial<Profile>) {
-  const { data, error } = await supabase.from("profiles").insert([profile]).select()
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .insert([{
+        ...profile,
+        auth_users_id: profile.id,
+      }])
+      .select()
+      .single()
 
-  if (error) throw error
-  return data[0]
+    if (error) {
+      console.error("Error creating profile:", error)
+      throw error
+    }
+    return data
+  } catch (error) {
+    console.error("Failed to create profile:", error)
+    throw error
+  }
 }
 
 export async function getProfile(userId: string) {
-  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single()
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("auth_users_id", userId)
+      .single()
 
-  if (error) throw error
-  return data
+    if (error) {
+      // If no profile exists, create one
+      if (error.code === "PGRST116") {
+        const { data: userData } = await supabase.auth.getUser()
+        if (userData.user) {
+          return createProfile({
+            id: userId,
+            email: userData.user.email || "",
+            full_name: userData.user.user_metadata?.full_name || "",
+            auth_users_id: userId,
+          })
+        }
+      }
+      console.error("Error getting profile:", error)
+      throw error
+    }
+    return data
+  } catch (error) {
+    console.error("Failed to get profile:", error)
+    throw error
+  }
 }
 
 export async function updateProfile(userId: string, updates: Partial<Profile>) {
-  const { data, error } = await supabase.from("profiles").update(updates).eq("id", userId).select()
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .update(updates)
+      .eq("auth_users_id", userId)
+      .select()
+      .single()
 
-  if (error) throw error
-  return data[0]
+    if (error) {
+      console.error("Error updating profile:", error)
+      throw error
+    }
+    return data
+  } catch (error) {
+    console.error("Failed to update profile:", error)
+    throw error
+  }
 }
 
 // Job functions
@@ -153,13 +243,23 @@ export async function getJobsBySkills(skillIds: string[], limit = 10) {
 
 // Application functions
 export async function createApplication(application: Partial<Application>) {
-  const { data, error } = await supabase.from("applications").insert([application]).select()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("User not authenticated")
+
+  const { data, error } = await supabase
+    .from("applications")
+    .insert([{ ...application, user_id: user.id }])
+    .select()
 
   if (error) throw error
   return data[0]
 }
 
 export async function getUserApplications(userId: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("User not authenticated")
+  if (user.id !== userId) throw new Error("Unauthorized")
+
   const { data, error } = await supabase
     .from("applications")
     .select(`
@@ -182,7 +282,15 @@ export async function getUserApplications(userId: string) {
 }
 
 export async function updateApplicationStatus(applicationId: string, status: string) {
-  const { data, error } = await supabase.from("applications").update({ status }).eq("id", applicationId).select()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("User not authenticated")
+
+  const { data, error } = await supabase
+    .from("applications")
+    .update({ status })
+    .eq("id", applicationId)
+    .eq("user_id", user.id)
+    .select()
 
   if (error) throw error
   return data[0]

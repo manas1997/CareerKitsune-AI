@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [applications, setApplications] = useState<Application[]>([])
   const [userSkills, setUserSkills] = useState<Skill[]>([])
   const [isLoadingData, setIsLoadingData] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -53,32 +54,25 @@ export default function Dashboard() {
     const fetchData = async () => {
       if (!user) return
 
-      setIsLoadingData(true)
-
       try {
-        // Get user skills
-        const skills = await getUserSkills(user.id)
-        setUserSkills(skills)
+        setIsLoadingData(true)
+        setError(null)
 
-        // Get recommended jobs based on skills if available
-        if (skills.length > 0) {
-          const skillIds = skills.map((skill) => skill.id)
-          const recommendedJobs = await getJobsBySkills(skillIds, 10)
-          setJobs(recommendedJobs)
-        } else {
-          // Otherwise get recent jobs
-          const recentJobs = await getJobs(10)
-          setJobs(recentJobs)
-        }
+        const [jobsData, applicationsData, skillsData] = await Promise.all([
+          getJobs(),
+          getUserApplications(user.id),
+          getUserSkills(user.id),
+        ])
 
-        // Get user applications
-        const userApplications = await getUserApplications(user.id)
-        setApplications(userApplications)
-      } catch (error) {
-        console.error("Error fetching data:", error)
+        setJobs(jobsData)
+        setApplications(applicationsData)
+        setUserSkills(skillsData)
+      } catch (err) {
+        console.error("Failed to fetch dashboard data:", err)
+        setError("Failed to load dashboard data. Please try again later.")
         toast({
-          title: "Error loading data",
-          description: "There was a problem loading your data. Please try again.",
+          title: "Error",
+          description: "Failed to load dashboard data",
           variant: "destructive",
         })
       } finally {
@@ -89,8 +83,35 @@ export default function Dashboard() {
     fetchData()
   }, [user, toast])
 
-  if (isLoading || !user) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
+  if (isLoading || isLoadingData) {
+    return (
+      <DashboardLayout>
+        <div className="flex h-full items-center justify-center">
+          <div className="text-center">
+            <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="text-muted-foreground">Loading dashboard...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="flex h-full items-center justify-center">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Error</CardTitle>
+              <CardDescription>{error}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => window.location.reload()}>Retry</Button>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (

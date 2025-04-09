@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import { Home, Briefcase, FileText, Settings, LogOut, Menu, X } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -27,7 +27,6 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, logout } = useAuth()
   const pathname = usePathname()
-  const [isOpen, setIsOpen] = useState(false)
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -64,11 +63,29 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <header className="border-b bg-background z-10">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)}>
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <KitsuneLogo size={32} />
+                    <span className="font-bold">CareerKitsune-AI</span>
+                  </div>
+                  <SheetClose asChild>
+                    <Button variant="ghost" size="icon">
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </SheetClose>
+                </div>
+                <nav className="flex flex-col gap-1">
+                  <NavItems />
+                </nav>
+              </SheetContent>
+            </Sheet>
             <Link href="/dashboard" className="flex items-center gap-2">
               <KitsuneLogo size={32} />
               <span className="font-bold hidden sm:inline-block">CareerKitsune-AI</span>
@@ -107,24 +124,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </div>
       </header>
-
-      {/* Mobile Navigation */}
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetContent side="left" className="w-64">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <KitsuneLogo size={32} />
-              <span className="font-bold">CareerKitsune-AI</span>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-          <nav className="flex flex-col gap-1">
-            <NavItems />
-          </nav>
-        </SheetContent>
-      </Sheet>
 
       {/* Main Content */}
       <div className="flex flex-1">

@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+import Link from "next/link"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Briefcase, MapPin, Clock, DollarSign, Star, Building, ChevronDown, ChevronUp } from "lucide-react"
-import { useVoice } from "@/context/voice-context"
+import { Briefcase, MapPin, Building2, Clock } from "lucide-react"
 import type { Job } from "@/types/job"
 
 interface JobCardProps {
@@ -13,94 +13,53 @@ interface JobCardProps {
 }
 
 export function JobCard({ job }: JobCardProps) {
-  const [expanded, setExpanded] = useState(false)
-  const { speak } = useVoice()
-
-  const handleApply = () => {
-    speak(
-      `To apply for the ${job.title} position at ${job.companies?.name || "this company"}, please say "Apply on my behalf" and I'll guide you through the process.`,
-    )
-  }
-
-  const handleSaveJob = () => {
-    // Logic to save job
-  }
-
-  const handleReadJob = () => {
-    const jobDescription = `Job Title: ${job.title}. Company: ${job.companies?.name || "Unknown"}. Location: ${job.location || "Not specified"}. Salary: ${formatSalary(job.salary_min, job.salary_max)}. Job Type: ${job.job_type}. Description: ${job.description}`
-    speak(jobDescription)
-  }
-
-  const formatSalary = (min?: number | null, max?: number | null) => {
-    if (!min && !max) return "Not specified"
-    if (min && !max) return `$${min.toLocaleString()}`
-    if (!min && max) return `Up to $${max.toLocaleString()}`
-    return `$${min?.toLocaleString()} - $${max?.toLocaleString()}`
-  }
-
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
+      <CardHeader>
+        <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-xl">{job.title}</CardTitle>
-            <div className="flex items-center gap-1 text-muted-foreground mt-1">
-              <Building className="h-4 w-4" />
-              <span>{job.companies?.name || "Unknown Company"}</span>
-            </div>
+            <CardDescription className="mt-1">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                <span>{job.company?.name}</span>
+              </div>
+            </CardDescription>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleSaveJob}>
-            <Star className="h-5 w-5" />
-          </Button>
+          <Badge variant="secondary">{job.type}</Badge>
         </div>
       </CardHeader>
-      <CardContent className="pb-2">
-        <div className="grid grid-cols-2 gap-y-2 mb-3">
-          <div className="flex items-center gap-1 text-sm">
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            <span>{job.location || (job.is_remote ? "Remote" : "Not specified")}</span>
+      <CardContent>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4" />
+            <span>{job.location || "Remote"}</span>
           </div>
-          <div className="flex items-center gap-1 text-sm">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-            <span>{formatSalary(job.salary_min, job.salary_max)}</span>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4" />
+            <span>Posted {new Date(job.created_at).toLocaleDateString()}</span>
           </div>
-          <div className="flex items-center gap-1 text-sm">
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-            <span>{job.job_type}</span>
-          </div>
-          <div className="flex items-center gap-1 text-sm">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span>{new Date(job.created_at).toLocaleDateString()}</span>
-          </div>
+          <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+            {job.description}
+          </p>
         </div>
-
-        <div className="flex flex-wrap gap-1 mb-3">
-          {job.job_skills?.map((skillItem) => (
-            <Badge key={skillItem.skill_id} variant="secondary">
-              {skillItem.skills.name}
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <div className="flex gap-2">
+          {job.skills?.slice(0, 3).map((skill) => (
+            <Badge key={skill.id} variant="outline">
+              {skill.name}
             </Badge>
           ))}
+          {job.skills && job.skills.length > 3 && (
+            <Badge variant="outline">+{job.skills.length - 3} more</Badge>
+          )}
         </div>
-
-        {expanded ? (
-          <div className="text-sm mt-2">
-            <p>{job.description}</p>
-            <Button variant="ghost" size="sm" className="mt-2 h-8 px-2 text-xs" onClick={() => setExpanded(false)}>
-              Show Less <ChevronUp className="ml-1 h-3 w-3" />
-            </Button>
-          </div>
-        ) : (
-          <Button variant="ghost" size="sm" className="mt-2 h-8 px-2 text-xs" onClick={() => setExpanded(true)}>
-            Show More <ChevronDown className="ml-1 h-3 w-3" />
-          </Button>
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-between pt-2">
-        <Button variant="outline" size="sm" onClick={handleReadJob}>
-          Read Job
-        </Button>
-        <Button size="sm" onClick={handleApply}>
-          Apply
+        <Button asChild>
+          <Link href={`/jobs/${job.id}`}>
+            <Briefcase className="mr-2 h-4 w-4" />
+            View Details
+          </Link>
         </Button>
       </CardFooter>
     </Card>
